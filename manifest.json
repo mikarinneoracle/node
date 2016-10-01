@@ -2,7 +2,7 @@
   "runtime":{
     "majorVersion":"0.12"
   },
-  "command": "node server.js",
+  "command": "node webapp.js",
   "release": {},
   "notes": ""
 }
