@@ -64,7 +64,7 @@ function handleRequest(request, response, requestBody) {
        return;
       }
       connection.execute(
-        "SELECT firstname, lastname FROM SYS.employee",
+        "SELECT id, firstname, lastname FROM SYS.employee",
         function(err, result)
         {
          if (err) {
@@ -77,8 +77,10 @@ function handleRequest(request, response, requestBody) {
          //res[0] = { rows.toString() };
          //console.log(res);
          doRelease(connection);
-         //response.end(JSON.stringify(topicList));
-         response.end(JSON.stringify(result.rows));
+         var id = addTopic(res[0][1],res[0][2]);
+         addComment(id, res[0][0]);
+         response.end(JSON.stringify(topicList));
+         //response.end(JSON.stringify(result.rows));
         });
       });
     }
