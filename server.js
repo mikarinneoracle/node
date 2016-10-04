@@ -1,3 +1,4 @@
+
 var http = require('http');
 var PORT = process.env.PORT || 8080;
 var oracledb = require('oracledb');
@@ -23,8 +24,8 @@ function addComment(topicId, text) {
 
 function load()
 {
-if(loaded)
-return;
+      if(loaded)
+          return;
       loaded=1;
       oracledb.getConnection(
       {
