@@ -1,11 +1,13 @@
 var http = require('http');
-var PORT = process.env.PORT;
+var PORT = process.env.PORT || 8080;
 var oracledb = require('oracledb');
 var dbConfig = require('./dbconfig.js');
+var connection;
 
 var topicList = [];
 var topicDetail = {};
-var currentId = 123;
+var currentId = 0;
+var loaded = 0;
 
 function addTopic(tTitle, tText) {
   console.log("addTopic(" + tTitle + "," + tText + ")");
@@ -19,13 +21,68 @@ function addComment(topicId, text) {
   topicDetail[topicId].comments.push(text);
 }
 
-var id1 = addTopic("Topic 1","Topic 1 content");
-var id2 = addTopic("Topic 2","Topic 2 content");
-addComment(id1, "Good topic");
-addComment(id2, "This is a comment");
-addComment(id2, "This is another comment");
+function load()
+{
+if(loaded)
+return;
+      loaded=1;
+      oracledb.getConnection(
+      {
+       user          : dbConfig.user,
+       password      : dbConfig.password,
+       connectString : dbConfig.connectString
+      },
+      function(err, conn)
+      {
+       if (err) {
+        console.error(err.message);
+       return;
+       }
+       connection = conn;
+       connection.execute(
+        "SELECT id, firstname, lastname FROM SYS.employee",
+        function(err, result)
+        {
+         if (err) {
+          console.error(err.message);
+          doRelease(connection);
+          return;
+         }
+         console.log(result.metaData);
+         console.log(result.rows);
+         //doRelease(connection);
+         for( var i=0, l=result.rows.length; i<l; i++ ) {
+                console.log(result.rows[i] );
+                res = result.rows[i];
+                var id = addTopic(res[1],res[2]);
+                addComment(id, res[0]);
+          }
+        }
+       );
+      }
+      );
+}
+
+function insert(title, text)
+{
+	 connection.execute(
+         'INSERT INTO SYS.EMPLOYEE (ID, FIRSTNAME, LASTNAME) VALUES(SYS.employee_seq.nextval, :fname, :lname)',
+          [title, text], // Bind values
+          function(err, result)
+          {
+           if (err) {
+            console.error(err.message);
+            doRelease(connection);
+            return;
+           } else {
+             console.log("Rows inserted: " + result.rowsAffected);
+           }
+           connection.execute('commit');
+          });
+}
 
 var server = http.createServer(function (request, response) {
+  load();
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   response.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
@@ -49,40 +106,10 @@ function handleRequest(request, response, requestBody) {
     if (request.method == 'POST') {
       var jsonMsg = JSON.parse(requestBody);
       addTopic(jsonMsg.title, jsonMsg.text);
+      insert(jsonMsg.title, jsonMsg.text);
       response.end();
     } else {
-      oracledb.getConnection(
-      {
-       user          : dbConfig.user,
-       password      : dbConfig.password,
-       connectString : dbConfig.connectString
-      },
-      function(err, connection)
-      {
-       if (err) {
-        console.error(err.message);
-       return;
-      }
-      connection.execute(
-        "SELECT id, firstname, lastname FROM SYS.employee",
-        function(err, result)
-        {
-         if (err) {
-          console.error(err.message);
-          doRelease(connection);
-          return;
-         }
-         console.log(result.metaData);
-         console.log(result.rows);
-         //res[0] = { rows.toString() };
-         //console.log(res);
-         doRelease(connection);
-         var id = addTopic(res[0][1],res[0][2]);
-         addComment(id, res[0][0]);
-         response.end(JSON.stringify(topicList));
-         //response.end(JSON.stringify(result.rows));
-        });
-      });
+      response.end(JSON.stringify(topicList));
     }
   } else {
     var topicId = request.url.substring(1);
