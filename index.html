@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MessageBoard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+      var url = "https://node-gse00000504.apaas.em2.oraclecloud.com";
+      //Hide all elements; display loading screen
+      function hideAll() {
+        document.getElementById('topic_list').setAttribute('style', 'display:none');
+        document.getElementById('new_topic').setAttribute('style', 'display:none');
+        document.getElementById('topic_detail').setAttribute('style', 'display:none');
+        document.getElementById('comment').setAttribute('style', 'display:none');
+        document.getElementById('loading').setAttribute('style', '');
+      }
+      // Load all the topics
+      function loadAllTopics() {
+        hideAll();
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("GET", url + "/", true);
+        xmlhttp.onreadystatechange = function () {
+          if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+console.log(xmlhttp);
+            var topics = JSON.parse(xmlhttp.responseText);
+            var tStr = '<h1>Topics</h1>';
+            tStr += '<ul>';
+            for (i = 0; i < topics.length; i++) {
+              tStr += '<li><a href="#" onclick="displayTopic(' + topics[i].id + ')">' + topics[i].title + '</a></li>';
+            }
+            tStr += '</ul>';
+            document.getElementById('topic_list').innerHTML = tStr;
+            document.getElementById('loading').setAttribute('style', 'display:none');
+            document.getElementById('new_topic').setAttribute('style', '');
+            document.getElementById('topic_list').setAttribute('style', '');
+          }
+        };
+        xmlhttp.send();
+      }
+      //If the user clicks a topic, then display the topic on screen
+      function displayTopic(topicId) {
+        hideAll();
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("GET", url + "/" + topicId, true);
+        xmlhttp.onreadystatechange = function () {
+          if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+            var topic = JSON.parse(xmlhttp.responseText);
+
+            document.getElementById("comment_topic_id").value = topicId;
+            document.getElementById("topic_detail_title").innerHTML = topic.title;
+            document.getElementById("topic_detail_text").innerHTML = topic.text;
+            var comments = "<ul>";
+            for (i = 0; i < topic.comments.length; i++) {
+              comments += "<li>" + topic.comments[i] + "</li>";
+            }
+            comments += "</ul>";
+            document.getElementById("topic_detail_comments").innerHTML = comments;
+
+            document.getElementById('loading').setAttribute('style', 'display:none');
+            document.getElementById('topic_detail').setAttribute('style', '');
+            document.getElementById('comment').setAttribute('style', '');
+          }
+        };
+        xmlhttp.send();
+      }
+      //If adding a new topic
+      function addNewTopic() {
+        hideAll();
+        var newTopic = {};
+        newTopic.title = document.getElementById('new_topic_title').value;
+        newTopic.text = document.getElementById('new_topic_text').value;
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("POST", url + "/", true);
+        xmlhttp.onreadystatechange = function () {
+          if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+            loadAllTopics();
+          }
+        };
+        xmlhttp.send(JSON.stringify(newTopic));
+      }
+
+      function addNewComment() {
+        hideAll();
+        var newComment = {};
+        newComment.topicId = document.getElementById('comment_topic_id').value;
+        newComment.text = document.getElementById('comment_text').value;
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("POST", url + "/" + newComment.topicId, true);
+        xmlhttp.onreadystatechange = function () {
+          if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+            displayTopic(newComment.topicId);
+          }
+        };
+        xmlhttp.send(JSON.stringify(newComment));
+      }
+      window.onload = function () {
+        hideAll();
+        loadAllTopics();
+      }
+    </script>    
+  </head>
+  <body>
+    <div id="loading">
+      <h2>Please wait...</h2>
+    </div>
+    <div id="topic_list" style="display: none;">
+    </div>
+    <div id="new_topic" style="display: none;">
+      <h3>New Topic</h3>
+      Title: <input type="text" id="new_topic_title" value=""><br>
+      Content: <input type="text" id="new_topic_text" value=""><br>
+      <input type="button" value="Add new topic" onclick="addNewTopic();">
+    </div>
+    <div id="topic_detail" style="display: none;">
+      <h4 id="topic_detail_title"></h4>
+      <div id="topic_detail_text"></div>
+      <div id="topic_detail_comments"></div>
+    </div>
+    <div id="comment" style="display: none;">
+      <h3>Add new Comment</h3>
+      <input type="hidden" id="comment_topic_id" value="0">
+      <input type="text" id="comment_text" value="">
+      <input type="button" value="Add new comment" onclick="addNewComment();">
+    </div>
+  </body>
+</html>
