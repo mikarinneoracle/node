@@ -1,5 +1,6 @@
-
+var fs = require("fs");
 var http = require('http');
+var url = require('url')
 var PORT = process.env.PORT || 8080;
 var oracledb = require('oracledb');
 var dbConfig = require('./dbconfig.js');
@@ -41,7 +42,7 @@ function load()
        }
        connection = conn;
        connection.execute(
-        "SELECT id, firstname, lastname FROM SYS.employee",
+        "SELECT id, topic, title FROM SYS.topic",
         function(err, result)
         {
          if (err) {
@@ -67,7 +68,7 @@ function load()
 function insert(title, text)
 {
 	 connection.execute(
-         'INSERT INTO SYS.EMPLOYEE (ID, FIRSTNAME, LASTNAME) VALUES(SYS.employee_seq.nextval, :fname, :lname)',
+         'INSERT INTO SYS.topic (id, topic, title) VALUES(SYS.topics_seq.nextval, :topic, :title)',
           [title, text], // Bind values
           function(err, result)
           {
@@ -102,7 +103,6 @@ var server = http.createServer(function (request, response) {
 
 function handleRequest(request, response, requestBody) {
   var res = {};
-  console.log(request.method + ":" + request.url + ' >>' + requestBody);
   if (request.url == '/') {
     if (request.method == 'POST') {
       var jsonMsg = JSON.parse(requestBody);
