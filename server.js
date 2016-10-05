@@ -125,7 +125,7 @@ function handleRequest(request, response, requestBody) {
 }
 
 server.listen(PORT, function () {
-  console.log('Server running...');
+  console.log('Server running on port ' + PORT + '...');
 });
 
 function doRelease(connection)
